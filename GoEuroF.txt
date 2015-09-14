@@ -1,0 +1,213 @@
+package com.example.tests;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.openqa.selenium.Alert;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoAlertPresentException;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.firefox.FirefoxDriver;
+
+public class GoEuro {
+  private WebDriver driver;
+  private String baseUrl;
+  private boolean acceptNextAlert = true;
+  private StringBuffer verificationErrors = new StringBuffer();
+  private List<Double> saidaF = new ArrayList<Double>();
+  private int inteiracao = 0;
+  private String currency = "";
+  private int act;
+  
+  //List<WebElement> selectElements= driver.findElements(By.cssSelector("input[name='checkboxes[]']"));
+
+  @Before
+  public void setUp() throws Exception {
+    driver = new FirefoxDriver();
+    baseUrl = "http://www2.goeuro.com/";
+    driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void testGoEuro() throws Exception {
+	driver.get(baseUrl);
+	
+    screenSearchCommand("from_filter", "to_filter", "Berlin", "Prague");
+    Thread.sleep(1000);
+
+    Thread.sleep(1000);
+    click("search-form__submit-btn");
+    Thread.sleep(5000);
+    
+    try {
+    	
+    do{
+    
+    Thread.sleep(5000);
+  //List of values before comma
+    ArrayList<WebElement> listaValores = (ArrayList<WebElement>) driver.findElements
+    		(By.xpath("//ul[@class='tabs-content contained']//span[@class='currency-beforecomma']"));
+    //List of values after comma
+    ArrayList<WebElement> listaValoresP = (ArrayList<WebElement>) driver.findElements
+    		(By.xpath("//ul[@class='tabs-content contained'] // span[@class='currency-decimals']"));
+    
+    Thread.sleep(1000);
+    
+    List<String> str = new ArrayList<String>();
+    List<String>  strDecimal= new ArrayList<String>();
+    
+    convertStringToDouble(concatRegistries(listToArray(cleanListBeforeConcat(str, 
+    		listaValores)), listToArray(cleanListBeforeConcat(strDecimal,listaValoresP)), str.size()));
+    nextPage();
+ 
+    Thread.sleep(6000);
+    
+    }while(act==10);
+    
+    } catch (Exception e) {
+		// TODO: handle exception
+	}
+    
+    if(listOrd(saidaF)){
+    	System.out.println("test passed");
+    }else{
+    	System.out.println("test not passed");
+    }
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    driver.close();
+  }
+  private void click(String id){
+	  
+	  WebElement botao = driver.findElement(By.id(id));
+	  botao.click();  
+  }
+  private String[] listToArray(List<String> str){
+	  String array1[] = new String[str.size()];
+	  
+	  int  controller = 0;
+	    if(!str.isEmpty()){
+	    	 for (String s : str) {
+	    	    	array1[controller] = s;
+	    			controller++;
+	    		}
+	    }
+	  return array1;
+  }
+  private List<String> cleanListBeforeConcat(List<String> listC, List<WebElement> listW){
+	  
+	   	for (WebElement lp : listW) {
+	   		String aux = lp.getText();
+	   		aux.trim();
+	   		listC.add(aux);
+		}
+	   	
+	   while(listC.contains("$ ")){
+		   listC.remove("$ ");
+	   }
+	    
+	    while(listC.contains("")){
+	    	listC.remove("");
+	    }
+	    act = listC.size();
+	    return listC;
+  }
+  private List<String> concatRegistries(String array1[], String array2[], int size){
+	  List<String> array3 = new ArrayList<String>();
+	  
+	  for (int i = 0; i < size; i++) {
+	    	array3.add(array1[i] + "." + (array2[i]));
+		}
+	  
+	  return array3;
+  }
+  private void convertStringToDouble(List<String> array3){
+	  	
+	  List<Double> convertDoubleList = new ArrayList<Double>();
+	    for (int i = 0; i < array3.size(); ++i) { 
+	    	convertDoubleList.add(Double.parseDouble(array3.get(i))); 
+	    }
+	    
+	    saidaF.addAll(convertDoubleList);
+	  
+  }
+  
+  private void nextPage(){
+	  
+	    try {
+	    	   if(driver.findElement(By.partialLinkText("Next")).isEnabled()){
+	    	    	driver.findElement(By.partialLinkText("Next")).click();	
+	    	    }
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+  }
+  
+  private boolean listOrd(List<Double> ord){
+	  
+	    Double aux = 0.0;
+	    boolean output = true;
+	    
+	    for (Double double1 : ord) {
+			if(double1 < aux){
+				output = false;
+			}else{
+				output =  true;
+			}
+			aux = double1;
+		}
+	  
+	  return output;
+  }
+  
+  private void screenSearchCommand(String idElementFromFilter, String idElementToFilter, String fromCity, String toCity ){
+	  
+	  	driver.findElement(By.id(idElementFromFilter)).clear();
+	    driver.findElement(By.id(idElementFromFilter)).sendKeys(fromCity);
+	    driver.findElement(By.id(idElementToFilter)).clear();
+	    driver.findElement(By.id("to_filter")).sendKeys(toCity);
+	    driver.findElement(By.id("to_filter")).sendKeys(Keys.TAB);
+	  
+  }
+  
+  private boolean isElementPresent(By by) {
+    try {
+      driver.findElement(by);
+      return true;
+    } catch (NoSuchElementException e) {
+      return false;
+    }
+  }
+
+  private boolean isAlertPresent() {
+    try {
+      driver.switchTo().alert();
+      return true;
+    } catch (NoAlertPresentException e) {
+      return false;
+    }
+  }
+
+  private String closeAlertAndGetItsText() {
+    try {
+      Alert alert = driver.switchTo().alert();
+      String alertText = alert.getText();
+      if (acceptNextAlert) {
+        alert.accept();
+      } else {
+        alert.dismiss();
+      }
+      return alertText;
+    } finally {
+      acceptNextAlert = true;
+    }
+  }
+}
